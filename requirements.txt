@@ -1,4 +1,4 @@
-django-4.0
-environs-9.3.*
-python-telegram-bot-13.9
-python-telegram-bot-calendar-1.0.5
+django==4.0
+environs==9.3.*
+python-telegram-bot==13.9
+python-telegram-bot-calendar==1.0.5
