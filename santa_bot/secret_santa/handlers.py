@@ -1,10 +1,10 @@
-#from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
+# from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 from collections import defaultdict
 from datetime import datetime
 from environs import Env
-from telegram import KeyboardButton, ReplyKeyboardMarkup,\
+from telegram import KeyboardButton, ReplyKeyboardMarkup, \
     ReplyKeyboardRemove
-from telegram.ext import CommandHandler, ConversationHandler,\
+from telegram.ext import CommandHandler, ConversationHandler, \
     Filters, MessageHandler
 
 from secret_santa.models import SantaGame, Participant
@@ -14,7 +14,6 @@ env.read_env()
 
 participants_info = defaultdict()
 games_info = defaultdict()
-
 
 START_GAME_KEYBOARD = ReplyKeyboardMarkup(
     keyboard=[
@@ -142,6 +141,98 @@ def get_game_registration_date(update, context):
     return 5
 
 
+def get_description_of_the_game(update, context):
+    # param из диплинка
+    param = 'Santa_1'
+    user = update.effective_user
+    user_name = user.first_name
+    user_id = update.message.chat_id
+    participant, _ = Participant.objects.get_or_create(tg_id=user_id)
+    participant.game = SantaGame.objects.get(name=param)
+    participant.save()
+
+    context.bot.send_message(
+        chat_id=user_id,
+        text=(
+            f'Привет, {user_name}.\n\n'
+            f'Замечательно, ты собираешься участвовать в игре:'
+            f'{participant.game.name}\n'
+            f'Ограничение стоимости подарка: от {participant.game.gift_price_from} до {participant.game.gift_price_to}\n'
+            f'Период регистрации: {participant.game.registration_limit}\n'
+            f'Дата отправки подарков: {participant.game.sending_gift_limit}\n\n'
+            f'Пожалуйста, введите Ваше имя:\n'
+
+        ),
+    )
+
+    return 7
+
+
+def get_participant_name(update, context):
+    message = update.message
+    user_id = message.chat_id
+    participant = Participant.objects.get(tg_id=user_id)
+    participant.name = message.text
+    participant.save()
+    context.bot.send_message(
+        chat_id=user_id,
+        text=(
+            f'Пожалуйста, введите Ваш адрес электронной почты:\n'
+        ),
+    )
+
+    return 8
+
+
+def get_participant_email(update, context):
+    message = update.message
+    user_id = message.chat_id
+    participant = Participant.objects.get(tg_id=user_id)
+    participant.email = message.text
+    participant.save()
+    context.bot.send_message(
+        chat_id=user_id,
+        text=(
+            f'Пожалуйста, введите Ваши пожелания и интересы:\n'
+        ),
+    )
+
+    return 9
+
+
+def get_participant_wish_list(update, context):
+    message = update.message
+    user_id = message.chat_id
+    participant = Participant.objects.get(tg_id=user_id)
+    participant.wish_list = message.text
+    participant.save()
+    context.bot.send_message(
+        chat_id=user_id,
+        text=(
+            f'Пожалуйста, напишите письмо Санте:\n'
+        ),
+    )
+
+    return 10
+
+
+def get_participant_letter_to_santa(update, context):
+    message = update.message
+    user_id = message.chat_id
+    participant = Participant.objects.get(tg_id=user_id)
+    participant.note_for_santa = message.text
+    participant.save()
+    context.bot.send_message(
+        chat_id=user_id,
+        text=(
+            f'Превосходно, ты в игре!'
+            f'{participant.game.registration_limit} мы проведем жеребьевку'
+            f' и ты узнаешь имя и контакты своего тайного друга. Ему и нужно будет подарить подарок!'
+
+        ),
+    )
+
+
 def test(update, context):
     message = update.message
     user_id = message.chat_id
@@ -201,7 +292,11 @@ participant_handler = ConversationHandler(
     entry_points=[CommandHandler('start', start1)],
 
     states={
-        6: [MessageHandler(Filters.text, ask_gift_price_limit)],
+        6: [MessageHandler(Filters.text, get_description_of_the_game)],
+        7: [MessageHandler(Filters.text, get_participant_name)],
+        8: [MessageHandler(Filters.text, get_participant_email)],
+        9: [MessageHandler(Filters.text, get_participant_wish_list)],
+        10: [MessageHandler(Filters.text, get_participant_letter_to_santa)],
 
     },
 
