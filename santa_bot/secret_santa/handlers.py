@@ -1,5 +1,6 @@
 # from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 from collections import defaultdict
+import uuid
 from datetime import datetime
 from environs import Env
 from telegram import KeyboardButton, ReplyKeyboardMarkup, \
@@ -14,6 +15,7 @@ env.read_env()
 
 participants_info = defaultdict()
 games_info = defaultdict()
+param_value = defaultdict()
 
 START_GAME_KEYBOARD = ReplyKeyboardMarkup(
     keyboard=[
@@ -70,14 +72,13 @@ def start(update, context):
     user_name = message.chat.first_name
     user_id = message.chat_id
     if context.args:
-        param_value = context.args[0]
-        if param_value == 'santa001':
-            context.bot.send_message(
-                chat_id=user_id,
-                text='*****',
-                reply_markup=BECOME_SANTA_KEYBOARD
-            )
-            ConversationHandler.END
+        param_value[user_id] = []
+        param_value[user_id].append(context.args[0])
+        update.message.reply_text(
+            text='***** HAPPY NEW YEAR *****',
+            reply_markup=BECOME_SANTA_KEYBOARD
+        )
+        ConversationHandler.END
     else:
         context.bot.send_message(
             chat_id=user_id,
@@ -91,16 +92,31 @@ def start(update, context):
         return 1
 
 
+def ask_game_name(update, context):
+    message = update.message
+    user_id = message.chat_id
+    context.bot.send_message(
+        chat_id=user_id,
+        text='Придумайте название для игры',
+        reply_markup=ReplyKeyboardRemove()
+    )
+
+    return 2
+
+
 def ask_gift_price_limit(update, context):
     message = update.message
     user_id = message.chat_id
+    games_info[user_id] = {}
+    games_info[user_id]['game_id'] = uuid.uuid4().hex
+    games_info[user_id]['name'] = message.text
     context.bot.send_message(
         chat_id=user_id,
         text='Ограничение стоимости подарка?',
         reply_markup=GIFT_PRICE_LIMIT_KEYBOARD
     )
 
-    return 2
+    return 3
 
 
 def get_gift_price_limit(update, context):
@@ -114,20 +130,19 @@ def get_gift_price_limit(update, context):
             ),
             reply_markup=REGISTRATION_DATE_KEYBOARD
         )
-        return 4
+        return 5
     else:
         context.bot.send_message(
             chat_id=user_id,
             text='Выберите диапазон стоимости подарка',
             reply_markup=GIFT_PRICE_KEYBOARD
         )
-        return 3
+        return 4
 
 
 def save_gift_price_limit(update, context):
     message = update.message
     user_id = message.chat_id
-    games_info[user_id] = {}
     if message.text == 'До 500 рублей':
         games_info[user_id]['gift_price_to'] = 500
     elif message.text == '500-1000 рублей':
@@ -141,7 +156,7 @@ def save_gift_price_limit(update, context):
         text='Период регистрации участников',
         reply_markup=REGISTRATION_DATE_KEYBOARD
     )
-    return 4
+    return 5
 
 
 def get_game_registration_date(update, context):
@@ -157,29 +172,26 @@ def get_game_registration_date(update, context):
         text='Дата отправки подарка\n\nПример: 2022-01-03',
         reply_markup=ReplyKeyboardRemove()
     )
-    return 5
+    return 6
 
 
 def get_description_of_the_game(update, context):
-    # param из диплинка
-    # param = 'Santa_1'
     user = update.effective_user
     user_name = user.first_name
     user_id = update.message.chat_id
-    game = 'santa001'
-    # participant, _ = Participant.objects.get_or_create(tg_id=user_id)
-    # participant.game = SantaGame.objects.get(name=param)
-    # participant.save()
+
+    #participant, _ = Participant.objects.get_or_create(tg_id=user_id)
+    game = SantaGame.objects.get(game_id=param_value[user_id][-1])
 
     context.bot.send_message(
         chat_id=user_id,
         text=(
             f'Привет, {user_name}.\n\n'
             f'Замечательно, ты собираешься участвовать в игре:'
-            f'{game}\n'
-            f'Ограничение стоимости подарка: от {1} до {2}\n'
-            f'Период регистрации: {3}\n'
-            f'Дата отправки подарков: {4}\n\n'
+            f'{game.name}\n'
+            f'Ограничение стоимости подарка: от {game.gift_price_from} до {game.gift_price_to}\n'
+            f'Период регистрации: {game.registration_limit}\n'
+            f'Дата отправки подарков: {game.sending_gift_limit}\n\n'
             f'Пожалуйста, введите Ваше имя:\n'
 
         ),
@@ -254,20 +266,33 @@ def get_participant_letter_to_santa(update, context):
     )
 
 
+def save_game_to_db(user_id):
+    SantaGame.objects.create(
+        game_id=games_info[user_id]['game_id'],
+        name=games_info[user_id]['name'],
+        registration_limit=games_info[user_id].get('registration_limit'),
+        sending_gift_limit=games_info[user_id].get('sending_gift_limit'),
+        gift_price_from=games_info[user_id].get('gift_price_from'),
+        gift_price_to=games_info[user_id].get('gift_price_to')
+    )
+    print(SantaGame.objects.get(game_id=games_info[user_id]['game_id']))
+
+
 def test(update, context):
     message = update.message
     user_id = message.chat_id
     # TODO проверка даты
     games_info[user_id]['sending_gift_limit'] = datetime.strptime(message.text, '%Y-%m-%d')
-    print(games_info[user_id])
 
     bot_link = 'https://t.me/dvmn_team_santa_bot'
-    param = '?start=santa001'
+    param = f'?start={games_info[user_id]["game_id"]}'
     context.bot.send_message(
         chat_id=user_id,
         text=f'Cсылка на вашу игру {bot_link + param}',
         reply_markup=ReplyKeyboardRemove()
     )
+    save_game_to_db(user_id)
+    games_info[user_id] = {}
     return ConversationHandler.END
 
 
@@ -280,29 +305,17 @@ def stop(update):
     return ConversationHandler.END
 
 
-def start1(update, context):
-    message = update.message
-    user_id = message.chat_id
-    param_value = context.args[0]
-    if param_value == 'santa001':
-        context.bot.send_message(
-            chat_id=user_id,
-            text='ДОБАВЛЯЙТЕСЬ В ИГРУ',
-        )
-
-        return 6
-
-
 game_handler = ConversationHandler(
 
     entry_points=[CommandHandler('start', start)],
 
     states={
-        1: [MessageHandler(Filters.text, ask_gift_price_limit)],
-        2: [MessageHandler(Filters.text, get_gift_price_limit)],
-        3: [MessageHandler(Filters.text, save_gift_price_limit)],
-        4: [MessageHandler(Filters.text, get_game_registration_date)],
-        5: [MessageHandler(Filters.text, test)],
+        1: [MessageHandler(Filters.text, ask_game_name)],
+        2: [MessageHandler(Filters.text, ask_gift_price_limit)],
+        3: [MessageHandler(Filters.text, get_gift_price_limit)],
+        4: [MessageHandler(Filters.text, save_gift_price_limit)],
+        5: [MessageHandler(Filters.text, get_game_registration_date)],
+        6: [MessageHandler(Filters.text, test)],
     },
 
     fallbacks=[CommandHandler('stop', stop)]

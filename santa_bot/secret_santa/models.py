@@ -1,10 +1,8 @@
-from datetime import timedelta
-
 from django.db import models
-from django.utils import timezone
 
 
 class SantaGame(models.Model):
+    game_id = models.CharField(max_length=32, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
     name = models.CharField(max_length=30)
     registration_limit = models.DateTimeField()
