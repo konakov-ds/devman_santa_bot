@@ -179,8 +179,8 @@ def get_description_of_the_game(update, context):
     user = update.effective_user
     user_name = user.first_name
     user_id = update.message.chat_id
+    participants_info[user_id] = {}
 
-    #participant, _ = Participant.objects.get_or_create(tg_id=user_id)
     game = SantaGame.objects.get(game_id=param_value[user_id][-1])
 
     context.bot.send_message(
@@ -198,15 +198,14 @@ def get_description_of_the_game(update, context):
         reply_markup=ReplyKeyboardRemove()
     )
 
-    return 7
+    return 22
 
 
 def get_participant_name(update, context):
     message = update.message
     user_id = message.chat_id
-    participant = Participant.objects.get(tg_id=user_id)
-    participant.name = message.text
-    participant.save()
+    participants_info[user_id]['name'] = message.text
+
     context.bot.send_message(
         chat_id=user_id,
         text=(
@@ -214,15 +213,14 @@ def get_participant_name(update, context):
         ),
     )
 
-    return 8
+    return 23
 
 
 def get_participant_email(update, context):
     message = update.message
     user_id = message.chat_id
-    participant = Participant.objects.get(tg_id=user_id)
-    participant.email = message.text
-    participant.save()
+    participants_info[user_id]['email'] = message.text
+
     context.bot.send_message(
         chat_id=user_id,
         text=(
@@ -230,15 +228,14 @@ def get_participant_email(update, context):
         ),
     )
 
-    return 9
+    return 24
 
 
 def get_participant_wish_list(update, context):
     message = update.message
     user_id = message.chat_id
-    participant = Participant.objects.get(tg_id=user_id)
-    participant.wish_list = message.text
-    participant.save()
+    participants_info[user_id]['wish_list'] = message.text
+
     context.bot.send_message(
         chat_id=user_id,
         text=(
@@ -246,15 +243,25 @@ def get_participant_wish_list(update, context):
         ),
     )
 
-    return 10
+    return 25
 
 
 def get_participant_letter_to_santa(update, context):
     message = update.message
     user_id = message.chat_id
-    participant = Participant.objects.get(tg_id=user_id)
+    participants_info[user_id]['note_for_santa'] = message.text
+
+    participant = Participant.objects.create(
+        tg_id=user_id,
+        game=SantaGame.objects.get(game_id=param_value[user_id][-1])
+    )
+
     participant.note_for_santa = message.text
+    participant.name = participants_info[user_id]['name']
+    participant.email = participants_info[user_id]['email']
+    participant.wish_list = participants_info[user_id]['wish_list']
     participant.save()
+
     context.bot.send_message(
         chat_id=user_id,
         text=(
@@ -284,6 +291,7 @@ def test(update, context):
     # TODO проверка даты
     games_info[user_id]['sending_gift_limit'] = datetime.strptime(message.text, '%Y-%m-%d')
 
+    # bot_link = 'https://t.me/dvm_bot_santa_bot'  ссылка для бота Ростислава
     bot_link = 'https://t.me/dvmn_team_santa_bot'
     param = f'?start={games_info[user_id]["game_id"]}'
     context.bot.send_message(
@@ -326,11 +334,11 @@ participant_handler = ConversationHandler(
     entry_points=[MessageHandler(Filters.text('Стать сантой'), get_description_of_the_game)],
 
     states={
-        6: [MessageHandler(Filters.text, get_description_of_the_game)],
-        7: [MessageHandler(Filters.text, get_participant_name)],
-        8: [MessageHandler(Filters.text, get_participant_email)],
-        9: [MessageHandler(Filters.text, get_participant_wish_list)],
-        10: [MessageHandler(Filters.text, get_participant_letter_to_santa)],
+
+        22: [MessageHandler(Filters.text, get_participant_name)],
+        23: [MessageHandler(Filters.text, get_participant_email)],
+        24: [MessageHandler(Filters.text, get_participant_wish_list)],
+        25: [MessageHandler(Filters.text, get_participant_letter_to_santa)],
 
     },
 
