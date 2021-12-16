@@ -55,21 +55,40 @@ REGISTRATION_DATE_KEYBOARD = ReplyKeyboardMarkup(
     resize_keyboard=True
 )
 
+BECOME_SANTA_KEYBOARD = ReplyKeyboardMarkup(
+    keyboard=[
+        [
+            KeyboardButton(text='Стать сантой'),
+        ],
+    ],
+    resize_keyboard=True
+)
+
 
 def start(update, context):
     message = update.message
     user_name = message.chat.first_name
     user_id = message.chat_id
-    context.bot.send_message(
-        chat_id=user_id,
-        text=(
-            f'Привет, {user_name}.🤚\n\n'
-            'Организуй тайный обмен подарками, запусти праздничное настроение!'
-        ),
-        reply_markup=START_GAME_KEYBOARD
-    )
+    if context.args:
+        param_value = context.args[0]
+        if param_value == 'santa001':
+            context.bot.send_message(
+                chat_id=user_id,
+                text='*****',
+                reply_markup=BECOME_SANTA_KEYBOARD
+            )
+            ConversationHandler.END
+    else:
+        context.bot.send_message(
+            chat_id=user_id,
+            text=(
+                f'Привет, {user_name}.🤚\n\n'
+                'Организуй тайный обмен подарками, запусти праздничное настроение!'
+            ),
+            reply_markup=START_GAME_KEYBOARD
+        )
 
-    return 1
+        return 1
 
 
 def ask_gift_price_limit(update, context):
@@ -143,26 +162,28 @@ def get_game_registration_date(update, context):
 
 def get_description_of_the_game(update, context):
     # param из диплинка
-    param = 'Santa_1'
+    # param = 'Santa_1'
     user = update.effective_user
     user_name = user.first_name
     user_id = update.message.chat_id
-    participant, _ = Participant.objects.get_or_create(tg_id=user_id)
-    participant.game = SantaGame.objects.get(name=param)
-    participant.save()
+    game = 'santa001'
+    # participant, _ = Participant.objects.get_or_create(tg_id=user_id)
+    # participant.game = SantaGame.objects.get(name=param)
+    # participant.save()
 
     context.bot.send_message(
         chat_id=user_id,
         text=(
             f'Привет, {user_name}.\n\n'
             f'Замечательно, ты собираешься участвовать в игре:'
-            f'{participant.game.name}\n'
-            f'Ограничение стоимости подарка: от {participant.game.gift_price_from} до {participant.game.gift_price_to}\n'
-            f'Период регистрации: {participant.game.registration_limit}\n'
-            f'Дата отправки подарков: {participant.game.sending_gift_limit}\n\n'
+            f'{game}\n'
+            f'Ограничение стоимости подарка: от {1} до {2}\n'
+            f'Период регистрации: {3}\n'
+            f'Дата отправки подарков: {4}\n\n'
             f'Пожалуйста, введите Ваше имя:\n'
 
         ),
+        reply_markup=ReplyKeyboardRemove()
     )
 
     return 7
@@ -289,7 +310,7 @@ game_handler = ConversationHandler(
 
 participant_handler = ConversationHandler(
 
-    entry_points=[CommandHandler('start', start1)],
+    entry_points=[MessageHandler(Filters.text('Стать сантой'), get_description_of_the_game)],
 
     states={
         6: [MessageHandler(Filters.text, get_description_of_the_game)],
