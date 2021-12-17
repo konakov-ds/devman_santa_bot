@@ -1,5 +1,6 @@
 # from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 from collections import defaultdict
+import random
 import uuid
 from datetime import datetime
 from environs import Env
@@ -61,6 +62,28 @@ BECOME_SANTA_KEYBOARD = ReplyKeyboardMarkup(
     keyboard=[
         [
             KeyboardButton(text='Стать сантой'),
+        ],
+    ],
+    resize_keyboard=True
+)
+
+WISH_LIST_KEYBOARD = ReplyKeyboardMarkup(
+    keyboard=[
+        [
+            KeyboardButton(text='Посмотреть пожелания других игроков'),
+        ],
+        [
+            KeyboardButton(text='Просто подожду'),
+        ],
+    ],
+    resize_keyboard=True
+)
+
+WISH_LIST_MENU_KEYBOARD = ReplyKeyboardMarkup(
+    keyboard=[
+        [
+            KeyboardButton(text='Случайный wishlist'),
+            KeyboardButton(text='Изменить свои данные'),
         ],
     ],
     resize_keyboard=True
@@ -179,26 +202,35 @@ def get_description_of_the_game(update, context):
     user = update.effective_user
     user_name = user.first_name
     user_id = update.message.chat_id
-    participants_info[user_id] = {}
+    check_participant = Participant.objects.filter(tg_id=user_id)
+    if check_participant:
+        context.bot.send_message(
+            chat_id=user_id,
+            text='Вы можете посмотреть пожелания других игроков',
+            reply_markup=WISH_LIST_MENU_KEYBOARD
+        )
+        return 26
+    else:
+        participants_info[user_id] = {}
 
-    game = SantaGame.objects.get(game_id=param_value[user_id][-1])
+        game = SantaGame.objects.get(game_id=param_value[user_id][-1])
 
-    context.bot.send_message(
-        chat_id=user_id,
-        text=(
-            f'Привет, {user_name}.\n\n'
-            f'Замечательно, ты собираешься участвовать в игре:'
-            f'{game.name}\n'
-            f'Ограничение стоимости подарка: от {game.gift_price_from} до {game.gift_price_to}\n'
-            f'Период регистрации: {game.registration_limit}\n'
-            f'Дата отправки подарков: {game.sending_gift_limit}\n\n'
-            f'Пожалуйста, введите Ваше имя:\n'
+        context.bot.send_message(
+            chat_id=user_id,
+            text=(
+                f'Привет, {user_name}.\n\n'
+                f'Замечательно, ты собираешься участвовать в игре:'
+                f'{game.name}\n'
+                f'Ограничение стоимости подарка: от {game.gift_price_from} до {game.gift_price_to}\n'
+                f'Период регистрации: {game.registration_limit}\n'
+                f'Дата отправки подарков: {game.sending_gift_limit}\n\n'
+                f'Пожалуйста, введите Ваше имя:\n'
 
-        ),
-        reply_markup=ReplyKeyboardRemove()
-    )
+            ),
+            reply_markup=ReplyKeyboardRemove()
+        )
 
-    return 22
+        return 22
 
 
 def get_participant_name(update, context):
@@ -270,7 +302,46 @@ def get_participant_letter_to_santa(update, context):
             f' и ты узнаешь имя и контакты своего тайного друга. Ему и нужно будет подарить подарок!'
 
         ),
+        reply_markup=WISH_LIST_KEYBOARD
     )
+    return 26
+
+
+def show_wishlist_menu(update, context):
+    message = update.message
+    user_id = message.chat_id
+
+    if message.text == 'Просто подожду':
+        context.bot.send_message(
+            chat_id=user_id,
+            text='**** HAPPY NEW YEAR *****',
+            reply_markup=ReplyKeyboardRemove()
+        )
+        ConversationHandler.END
+    else:
+        wish_list = get_random_wishlist(user_id)
+        context.bot.send_message(
+            chat_id=user_id,
+            text=f'Пожелания одного из игроков:\n{wish_list}',
+            reply_markup=WISH_LIST_MENU_KEYBOARD
+        )
+        return 27
+
+
+def show_random_wishlist(update, context):
+    message = update.message
+    user_id = message.chat_id
+
+    if message.text == 'Изменить свои данные':
+        return 28
+
+    else:
+        wish_list = get_random_wishlist(user_id)
+        context.bot.send_message(
+            chat_id=user_id,
+            text=f'Пожелания одного из игроков:\n{wish_list}',
+        )
+        return 27
 
 
 def save_game_to_db(user_id):
@@ -302,6 +373,15 @@ def test(update, context):
     save_game_to_db(user_id)
     games_info[user_id] = {}
     return ConversationHandler.END
+
+
+# TODO вынести в отедьный файл
+def get_random_wishlist(tg_id):
+    participant = Participant.objects.get(tg_id=tg_id)
+    game = participant.game
+    participants = Participant.objects.filter(game=game).exclude(tg_id=tg_id)
+    random_participant = random.choice(participants)
+    return random_participant.wish_list
 
 
 def help(update, context):
@@ -339,6 +419,8 @@ participant_handler = ConversationHandler(
         23: [MessageHandler(Filters.text, get_participant_email)],
         24: [MessageHandler(Filters.text, get_participant_wish_list)],
         25: [MessageHandler(Filters.text, get_participant_letter_to_santa)],
+        26: [MessageHandler(Filters.text, show_wishlist_menu)],
+        27: [MessageHandler(Filters.text, show_random_wishlist)],
 
     },
 
