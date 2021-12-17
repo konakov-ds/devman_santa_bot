@@ -11,6 +11,8 @@ from telegram.ext import CommandHandler, ConversationHandler, \
 
 from secret_santa.models import SantaGame, Participant
 
+from secret_santa.get_santa import get_santas
+
 env = Env()
 env.read_env()
 
@@ -22,6 +24,7 @@ START_GAME_KEYBOARD = ReplyKeyboardMarkup(
     keyboard=[
         [
             KeyboardButton(text='Создать игру'),
+            KeyboardButton(text='Запустить жеребьевку'),
         ],
     ],
     resize_keyboard=True
@@ -134,6 +137,37 @@ def start(update, context):
 def ask_game_name(update, context):
     message = update.message
     user_id = message.chat_id
+    id_users = []
+    if message.text == 'Запустить жеребьевку':
+        santa_games = SantaGame.objects.all()
+        if santa_games.count():
+            for game in santa_games:
+                participants = Participant.objects.filter(game=game)
+                if len(participants) >= 3:
+                    for participant in participants:
+                        id_users.append(participant.tg_id)
+                    winners = get_santas(id_users)
+                    for santa_for, recipient in winners.items():
+                        donor = Participant.objects.get(tg_id=santa_for)
+                        recipient = Participant.objects.get(tg_id=recipient)
+                        donor.santa_for = recipient
+                        donor.save()
+                    context.bot.send_message(
+                        chat_id=user_id,
+                        text='Тайным Сантам отправлены уведомления.',
+                        reply_markup=WISH_LIST_KEYBOARD
+                    )
+
+                    return 26
+
+        context.bot.send_message(
+            chat_id=user_id,
+            text='К сожалению, доступных игр нет.',
+            reply_markup=WISH_LIST_KEYBOARD
+        )
+
+        return 26
+
     context.bot.send_message(
         chat_id=user_id,
         text='Придумайте название для игры',
