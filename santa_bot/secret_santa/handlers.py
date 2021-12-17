@@ -73,6 +73,9 @@ WISH_LIST_KEYBOARD = ReplyKeyboardMarkup(
             KeyboardButton(text='Посмотреть пожелания других игроков'),
         ],
         [
+            KeyboardButton(text='Изменить свои данные'),
+        ],
+        [
             KeyboardButton(text='Просто подожду'),
         ],
     ],
@@ -84,6 +87,19 @@ WISH_LIST_MENU_KEYBOARD = ReplyKeyboardMarkup(
         [
             KeyboardButton(text='Случайный wishlist'),
             KeyboardButton(text='Изменить свои данные'),
+        ],
+    ],
+    resize_keyboard=True
+)
+
+EDIT_PROFILE_KEYBOARD = ReplyKeyboardMarkup(
+    keyboard=[
+        [
+            KeyboardButton(text='Имя'),
+            KeyboardButton(text='Почта'),
+            KeyboardButton(text='Пожелания'),
+            KeyboardButton(text='Письмо Санте'),
+            KeyboardButton(text='Завершить редактирование'),
         ],
     ],
     resize_keyboard=True
@@ -318,6 +334,14 @@ def show_wishlist_menu(update, context):
             reply_markup=ReplyKeyboardRemove()
         )
         ConversationHandler.END
+
+    elif message.text == 'Изменить свои данные':
+        context.bot.send_message(
+            chat_id=user_id,
+            text=f'Пожалуйста, выберите, какие данные профиля Вы хотели бы изменить:\n',
+            reply_markup=EDIT_PROFILE_KEYBOARD
+        )
+        return 28
     else:
         wish_list = get_random_wishlist(user_id)
         context.bot.send_message(
@@ -325,23 +349,113 @@ def show_wishlist_menu(update, context):
             text=f'Пожелания одного из игроков:\n{wish_list}',
             reply_markup=WISH_LIST_MENU_KEYBOARD
         )
-        return 27
+        return 26
 
 
 def show_random_wishlist(update, context):
     message = update.message
     user_id = message.chat_id
 
-    if message.text == 'Изменить свои данные':
-        return 28
+    wish_list = get_random_wishlist(user_id)
+    context.bot.send_message(
+        chat_id=user_id,
+        text=f'Пожелания одного из игроков:\n{wish_list}',
+    )
+    return 26
 
-    else:
-        wish_list = get_random_wishlist(user_id)
+
+def edit_participant_profile(update, context):
+    message = update.message
+    user_id = message.chat_id
+    participant = Participant.objects.get(tg_id=user_id)
+
+    if message.text == 'Имя':
         context.bot.send_message(
             chat_id=user_id,
-            text=f'Пожелания одного из игроков:\n{wish_list}',
+            text=f'Ваше имя - {participant.name}. Введите имя:',
         )
-        return 27
+        return 31
+    if message.text == 'Почта':
+        context.bot.send_message(
+            chat_id=user_id,
+            text=f'Ваш email - {participant.email}. Введите имя:',
+        )
+        return 32
+    if message.text == 'Пожелания':
+        context.bot.send_message(
+            chat_id=user_id,
+            text=f'Ваши пожелания - {participant.wish_list}. Введите имя:',
+        )
+        return 33
+    if message.text == 'Письмо Санте':
+        context.bot.send_message(
+            chat_id=user_id,
+            text=f'Ваше письмо Санте: - {participant.note_for_santa}. Введите имя:',
+        )
+        return 34
+    if message.text == 'Завершить редактирование':
+        context.bot.send_message(
+            chat_id=user_id,
+            text=f'Редактирование завершено.',
+            reply_markup=WISH_LIST_KEYBOARD
+        )
+        return 26
+
+
+def edit_participant_name(update, context):
+    message = update.message
+    user_id = message.chat_id
+    participant = Participant.objects.get(tg_id=user_id)
+    participant.name = message.text
+    participant.save()
+    context.bot.send_message(
+        chat_id=user_id,
+        text=f'Данные сохранены.',
+        reply_markup=EDIT_PROFILE_KEYBOARD
+    )
+    return 28
+
+
+def edit_participant_email(update, context):
+    message = update.message
+    user_id = message.chat_id
+    participant = Participant.objects.get(tg_id=user_id)
+    participant.email = message.text
+    participant.save()
+    context.bot.send_message(
+        chat_id=user_id,
+        text=f'Данные сохранены.',
+        reply_markup=EDIT_PROFILE_KEYBOARD
+    )
+    return 28
+
+
+def edit_participant_wish(update, context):
+    message = update.message
+    user_id = message.chat_id
+    participant = Participant.objects.get(tg_id=user_id)
+    participant.wish_list = message.text
+    participant.save()
+    context.bot.send_message(
+        chat_id=user_id,
+        text=f'Данные сохранены.',
+        reply_markup=EDIT_PROFILE_KEYBOARD
+    )
+    return 28
+
+
+def edit_participant_letter(update, context):
+    message = update.message
+    user_id = message.chat_id
+    participant = Participant.objects.get(tg_id=user_id)
+    participant.note_for_santa = message.text
+    participant.save()
+    context.bot.send_message(
+        chat_id=user_id,
+        text=f'Данные сохранены.',
+        reply_markup=EDIT_PROFILE_KEYBOARD
+    )
+    return 28
 
 
 def save_game_to_db(user_id):
@@ -362,8 +476,8 @@ def test(update, context):
     # TODO проверка даты
     games_info[user_id]['sending_gift_limit'] = datetime.strptime(message.text, '%Y-%m-%d')
 
-    # bot_link = 'https://t.me/dvm_bot_santa_bot'  ссылка для бота Ростислава
-    bot_link = 'https://t.me/dvmn_team_santa_bot'
+    bot_link = 'https://t.me/dvm_bot_santa_bot'  # ссылка для бота Ростислава
+    # bot_link = 'https://t.me/dvmn_team_santa_bot'
     param = f'?start={games_info[user_id]["game_id"]}'
     context.bot.send_message(
         chat_id=user_id,
@@ -421,6 +535,11 @@ participant_handler = ConversationHandler(
         25: [MessageHandler(Filters.text, get_participant_letter_to_santa)],
         26: [MessageHandler(Filters.text, show_wishlist_menu)],
         27: [MessageHandler(Filters.text, show_random_wishlist)],
+        28: [MessageHandler(Filters.text, edit_participant_profile)],
+        31: [MessageHandler(Filters.text, edit_participant_name)],
+        32: [MessageHandler(Filters.text, edit_participant_email)],
+        33: [MessageHandler(Filters.text, edit_participant_wish)],
+        34: [MessageHandler(Filters.text, edit_participant_letter)],
 
     },
 
