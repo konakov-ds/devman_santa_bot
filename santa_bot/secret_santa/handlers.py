@@ -510,8 +510,8 @@ def test(update, context):
     # TODO проверка даты
     games_info[user_id]['sending_gift_limit'] = datetime.strptime(message.text, '%Y-%m-%d')
 
-    bot_link = 'https://t.me/dvm_bot_santa_bot'  # ссылка для бота Ростислава
-    # bot_link = 'https://t.me/dvmn_team_santa_bot'
+    # bot_link = 'https://t.me/dvm_bot_santa_bot'  # ссылка для бота Ростислава
+    bot_link = 'https://t.me/dvmn_team_santa_bot'
     param = f'?start={games_info[user_id]["game_id"]}'
     context.bot.send_message(
         chat_id=user_id,
