@@ -3,6 +3,7 @@ from django.db import models
 
 class SantaGame(models.Model):
     game_id = models.CharField(max_length=32, unique=True)
+    admin_id = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
     name = models.CharField(max_length=30)
     registration_limit = models.DateTimeField()
