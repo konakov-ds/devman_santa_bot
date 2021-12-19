@@ -49,7 +49,7 @@ python manage.py runserver
 - run the bot with command below and pass to your bot chat in Telegram
 
 ```bash
-$python manage.py tg_bot
+$python manage.py bot
 ```
 
 ## Working with Database 
