@@ -46,8 +46,6 @@ $python manage.py createsuperuser"
 python manage.py runserver
 ```
 
-- fullfill the fields according to the chapter "Models"
-
 - run the bot with command below and pass to your bot chat in Telegram
 
 ```bash
