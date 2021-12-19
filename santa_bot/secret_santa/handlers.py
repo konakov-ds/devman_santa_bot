@@ -98,7 +98,6 @@ WISH_LIST_KEYBOARD = ReplyKeyboardMarkup(
     resize_keyboard=True
 )
 
-
 EDIT_PROFILE_KEYBOARD = ReplyKeyboardMarkup(
     keyboard=[
         [
@@ -119,6 +118,7 @@ EDIT_PROFILE_KEYBOARD = ReplyKeyboardMarkup(
     ],
     resize_keyboard=True
 )
+
 
 # END BUTTONS BLOCK
 
@@ -162,7 +162,6 @@ def start(update, context):
 
 
 def ask_game_name(update, context):
-
     now = django.utils.timezone.now()
 
     message = update.message
@@ -278,7 +277,7 @@ def get_game_registration_date(update, context):
     message = update.message
     user_id = message.chat_id
     if message.text == 'До 25.12.2021':
-        games_info[user_id]['registration_limit'] = datetime(2021, 12, 18, 12, 0)
+        games_info[user_id]['registration_limit'] = datetime(2021, 12, 25, 12, 0)
     else:
         games_info[user_id]['registration_limit'] = datetime(2021, 12, 31, 12, 0)
 
@@ -305,11 +304,10 @@ def save_game_to_db(user_id):
 def send_game_url(update, context):
     message = update.message
     user_id = message.chat_id
-    # TODO проверка даты
+
     games_info[user_id]['sending_gift_limit'] = datetime.strptime(message.text, '%Y-%m-%d')
 
-    bot_link = 'https://t.me/dvm_bot_santa_bot'  # ссылка для бота Ростислава
-    # bot_link = 'https://t.me/dvmn_team_santa_bot'
+    bot_link = 'https://t.me/dvmn_team_santa_bot'
     param = f'?start={games_info[user_id]["game_id"]}'
     context.bot.send_message(
         chat_id=user_id,
@@ -319,6 +317,7 @@ def send_game_url(update, context):
     save_game_to_db(user_id)
     games_info[user_id] = {}
     return ConversationHandler.END
+
 
 # END CREATE GAME BLOCK
 
@@ -560,6 +559,7 @@ def edit_participant_letter(update, context):
     )
     return 28
 
+
 # END ADD PARTICIPANTS BLOCK
 
 
@@ -570,6 +570,7 @@ def help(update, context):
 def stop(update):
     update.message.reply_text("Стоп")
     return ConversationHandler.END
+
 
 # CONVERSATIONS BLOCK
 
