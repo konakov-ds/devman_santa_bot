@@ -1,6 +1,7 @@
 import uuid
 from collections import defaultdict
 from datetime import datetime
+import django
 
 from environs import Env
 from secret_santa.models import Participant
@@ -161,7 +162,9 @@ def start(update, context):
 
 
 def ask_game_name(update, context):
-    # TODO Так делать не надо! Переход к другому хендлеру
+
+    now = django.utils.timezone.now()
+
     message = update.message
     user_id = message.chat_id
     id_users = []
@@ -170,7 +173,7 @@ def ask_game_name(update, context):
         if santa_games.count():
             for game in santa_games:
                 participants = Participant.objects.filter(game=game)
-                if len(participants) >= 3:
+                if len(participants) >= 3 and now > game.registration_limit:
                     for participant in participants:
                         id_users.append(participant.tg_id)
                     winners = get_santas(id_users)
@@ -179,19 +182,31 @@ def ask_game_name(update, context):
                         recipient = Participant.objects.get(tg_id=recipient)
                         donor.santa_for = recipient
                         donor.save()
+                        context.bot.send_message(
+                            chat_id=donor.tg_id,
+                            text=f'Жеребьевка в игре “Тайный Санта” проведена! Спешу сообщить кто тебе выпал:\n'
+                                 f'Имя: {recipient.name}, Почта: {recipient.email}\n'
+                                 f'Письмо для Санты: {recipient.note_for_santa}\n'
+                                 f'Пожелания: {recipient.wish_list}',
+                        )
                     context.bot.send_message(
                         chat_id=user_id,
                         text='Тайным Сантам отправлены уведомления.',
                         reply_markup=GAME_KEYBOARD
                     )
                     return 1
+            context.bot.send_message(
+                chat_id=user_id,
+                text='Время игры не наступило, либо количество участников недостаточное.',
+                reply_markup=GAME_KEYBOARD
+            )
+            return 1
 
         context.bot.send_message(
             chat_id=user_id,
             text='К сожалению, доступных игр нет.',
             reply_markup=GAME_KEYBOARD
         )
-
         return 1
 
     context.bot.send_message(
@@ -263,7 +278,7 @@ def get_game_registration_date(update, context):
     message = update.message
     user_id = message.chat_id
     if message.text == 'До 25.12.2021':
-        games_info[user_id]['registration_limit'] = datetime(2021, 12, 25, 12, 0)
+        games_info[user_id]['registration_limit'] = datetime(2021, 12, 18, 12, 0)
     else:
         games_info[user_id]['registration_limit'] = datetime(2021, 12, 31, 12, 0)
 
@@ -293,8 +308,8 @@ def send_game_url(update, context):
     # TODO проверка даты
     games_info[user_id]['sending_gift_limit'] = datetime.strptime(message.text, '%Y-%m-%d')
 
-    # bot_link = 'https://t.me/dvm_bot_santa_bot'  # ссылка для бота Ростислава
-    bot_link = 'https://t.me/dvmn_team_santa_bot'
+    bot_link = 'https://t.me/dvm_bot_santa_bot'  # ссылка для бота Ростислава
+    # bot_link = 'https://t.me/dvmn_team_santa_bot'
     param = f'?start={games_info[user_id]["game_id"]}'
     context.bot.send_message(
         chat_id=user_id,
