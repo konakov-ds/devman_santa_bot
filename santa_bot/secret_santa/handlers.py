@@ -28,7 +28,7 @@ param_value = defaultdict()
 START_GAME_KEYBOARD = ReplyKeyboardMarkup(
     keyboard=[
         [
-            KeyboardButton(text='Создать игру'),
+            KeyboardButton(text='Создать игру 🎄'),
         ],
     ],
     resize_keyboard=True
@@ -37,10 +37,10 @@ START_GAME_KEYBOARD = ReplyKeyboardMarkup(
 GAME_KEYBOARD = ReplyKeyboardMarkup(
     keyboard=[
         [
-            KeyboardButton(text='Создать игру'),
+            KeyboardButton(text='Создать игру 🎄'),
         ],
         [
-            KeyboardButton(text='Запустить жеребьевку'),
+            KeyboardButton(text='Запустить жеребьевку 🔄'),
         ],
     ],
     resize_keyboard=True
@@ -49,8 +49,8 @@ GAME_KEYBOARD = ReplyKeyboardMarkup(
 GIFT_PRICE_LIMIT_KEYBOARD = ReplyKeyboardMarkup(
     keyboard=[
         [
-            KeyboardButton(text='Да'),
-            KeyboardButton(text='Нет'),
+            KeyboardButton(text='Да ✅'),
+            KeyboardButton(text='Нет ❌'),
         ],
     ],
     resize_keyboard=True
@@ -59,9 +59,13 @@ GIFT_PRICE_LIMIT_KEYBOARD = ReplyKeyboardMarkup(
 GIFT_PRICE_KEYBOARD = ReplyKeyboardMarkup(
     keyboard=[
         [
-            KeyboardButton(text='До 500 рублей'),
-            KeyboardButton(text='500-1000 рублей'),
-            KeyboardButton(text='1000-2000 рублей'),
+            KeyboardButton(text='До 500 рублей 💰'),
+        ],
+        [
+            KeyboardButton(text='500-1000 рублей 🤑'),
+        ],
+        [
+            KeyboardButton(text='1000-2000 рублей 💸'),
         ],
     ],
     resize_keyboard=True
@@ -70,8 +74,8 @@ GIFT_PRICE_KEYBOARD = ReplyKeyboardMarkup(
 REGISTRATION_DATE_KEYBOARD = ReplyKeyboardMarkup(
     keyboard=[
         [
-            KeyboardButton(text='До 25.12.2021'),
-            KeyboardButton(text='До 31.12.2021'),
+            KeyboardButton(text='До 25.12.2021 ⏰'),
+            KeyboardButton(text='До 31.12.2021 ⏰'),
         ],
     ],
     resize_keyboard=True
@@ -80,7 +84,7 @@ REGISTRATION_DATE_KEYBOARD = ReplyKeyboardMarkup(
 BECOME_SANTA_KEYBOARD = ReplyKeyboardMarkup(
     keyboard=[
         [
-            KeyboardButton(text='Стать сантой'),
+            KeyboardButton(text='Стать сантой 🎅'),
         ],
     ],
     resize_keyboard=True
@@ -89,10 +93,10 @@ BECOME_SANTA_KEYBOARD = ReplyKeyboardMarkup(
 WISH_LIST_KEYBOARD = ReplyKeyboardMarkup(
     keyboard=[
         [
-            KeyboardButton(text='Посмотреть пожелания других игроков'),
+            KeyboardButton(text='Посмотреть пожелания других игроков 🗒️'),
         ],
         [
-            KeyboardButton(text='Изменить свои данные'),
+            KeyboardButton(text='Изменить свои данные ♻️'),
         ],
     ],
     resize_keyboard=True
@@ -101,19 +105,19 @@ WISH_LIST_KEYBOARD = ReplyKeyboardMarkup(
 EDIT_PROFILE_KEYBOARD = ReplyKeyboardMarkup(
     keyboard=[
         [
-            KeyboardButton(text='Имя'),
+            KeyboardButton(text='Имя 🥷'),
         ],
         [
-            KeyboardButton(text='Почта'),
+            KeyboardButton(text='Почта ✉️'),
         ],
         [
-            KeyboardButton(text='Список желаний'),
+            KeyboardButton(text='Список желаний ❤️'),
         ],
         [
-            KeyboardButton(text='Письмо Санте'),
+            KeyboardButton(text='Письмо Санте 🔥'),
         ],
         [
-            KeyboardButton(text='Завершить редактирование'),
+            KeyboardButton(text='Завершить редактирование 💾'),
         ],
     ],
     resize_keyboard=True
@@ -144,7 +148,7 @@ def start(update, context):
         param_value[user_id] = []
         param_value[user_id].append(context.args[0])
         update.message.reply_text(
-            text='***** HAPPY NEW YEAR *****',
+            text='❄️ HAPPY NEW YEAR ❄️',
             reply_markup=BECOME_SANTA_KEYBOARD
         )
         return ConversationHandler.END
@@ -167,7 +171,7 @@ def ask_game_name(update, context):
     message = update.message
     user_id = message.chat_id
     id_users = []
-    if message.text == 'Запустить жеребьевку':
+    if message.text == 'Запустить жеребьевку 🔄':
         santa_games = SantaGame.objects.all()
         if santa_games.count():
             for game in santa_games:
@@ -236,7 +240,7 @@ def ask_gift_price_limit(update, context):
 def get_gift_price_limit(update, context):
     message = update.message
     user_id = message.chat_id
-    if message.text == 'Нет':
+    if message.text == 'Нет ❌':
         context.bot.send_message(
             chat_id=user_id,
             text=(
@@ -257,9 +261,9 @@ def get_gift_price_limit(update, context):
 def save_gift_price_limit(update, context):
     message = update.message
     user_id = message.chat_id
-    if message.text == 'До 500 рублей':
+    if message.text == 'До 500 рублей 💰':
         games_info[user_id]['gift_price_to'] = 500
-    elif message.text == '500-1000 рублей':
+    elif message.text == '500-1000 рублей 🤑':
         games_info[user_id]['gift_price_from'] = 500
         games_info[user_id]['gift_price_to'] = 1000
     else:
@@ -276,7 +280,7 @@ def save_gift_price_limit(update, context):
 def get_game_registration_date(update, context):
     message = update.message
     user_id = message.chat_id
-    if message.text == 'До 25.12.2021':
+    if message.text == 'До 25.12.2021 ⏰':
         games_info[user_id]['registration_limit'] = datetime(2021, 12, 25, 12, 0)
     else:
         games_info[user_id]['registration_limit'] = datetime(2021, 12, 31, 12, 0)
@@ -437,7 +441,7 @@ def show_wishlist_menu(update, context):
     message = update.message
     user_id = message.chat_id
 
-    if message.text == 'Изменить свои данные':
+    if message.text == 'Изменить свои данные ♻️':
         context.bot.send_message(
             chat_id=user_id,
             text=f'Пожалуйста, выберите, какие данные профиля Вы хотели бы изменить:\n',
@@ -471,31 +475,31 @@ def edit_participant_profile(update, context):
     user_id = message.chat_id
     participant = Participant.objects.get(tg_id=user_id)
 
-    if message.text == 'Имя':
+    if message.text == 'Имя 🥷':
         context.bot.send_message(
             chat_id=user_id,
             text=f'Ваше текущее имя: {participant.name}\nВведите новое имя:',
         )
         return 31
-    if message.text == 'Почта':
+    if message.text == 'Почта ✉️':
         context.bot.send_message(
             chat_id=user_id,
             text=f'Ваш текущий email: {participant.email}. Введите новый email:',
         )
         return 32
-    if message.text == 'Пожелания':
+    if message.text == 'Пожелания ❤️':
         context.bot.send_message(
             chat_id=user_id,
             text=f'Ваши текущие пожелания: {participant.wish_list}. Введите новые:',
         )
         return 33
-    if message.text == 'Письмо Санте':
+    if message.text == 'Письмо Санте 🔥':
         context.bot.send_message(
             chat_id=user_id,
             text=f'Ваше текущее письмо Санте: {participant.note_for_santa}. Введите новое:',
         )
         return 34
-    if message.text == 'Завершить редактирование':
+    if message.text == 'Завершить редактирование 💾':
         context.bot.send_message(
             chat_id=user_id,
             text=f'Редактирование завершено.',
@@ -593,7 +597,7 @@ game_handler = ConversationHandler(
 
 participant_handler = ConversationHandler(
 
-    entry_points=[MessageHandler(Filters.text('Стать сантой'), get_description_of_the_game)],
+    entry_points=[MessageHandler(Filters.text('Стать сантой 🎅'), get_description_of_the_game)],
 
     states={
 
